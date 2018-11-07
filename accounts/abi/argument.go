@@ -243,12 +243,9 @@ func (arguments Arguments) Pack(args ...interface{}) ([]byte, error) {
 	// input offset is the bytes offset for packed output
 	inputOffset := 0
 	for _, abiArg := range abiArgs {
-		if abiArg.Type.T == ArrayTy {
-			inputOffset += 32 * abiArg.Type.Size
-		} else {
-			inputOffset += 32
-		}
+		inputOffset += getOffset(abiArg.Type)
 	}
+
 	var ret []byte
 	for i, a := range args {
 		input := abiArgs[i]
@@ -257,8 +254,8 @@ func (arguments Arguments) Pack(args ...interface{}) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		// check for a slice type (string, bytes, slice)
-		if input.Type.requiresLengthPrefix() {
+		// check for dynamic types)=
+		if offsetRequired(input.Type) {
 			// calculate the offset
 			offset := inputOffset + len(variableInput)
 			// set the offset

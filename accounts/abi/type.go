@@ -194,7 +194,7 @@ func (t Type) pack(v reflect.Value) ([]byte, error) {
 
 		// calculate offset if any
 		offset := 0
-		offsetReq := t.Elem.requiresLengthPrefix()
+		offsetReq := offsetRequired(*t.Elem)
 		if offsetReq {
 			offset = getOffset(*t.Elem) * v.Len()
 		}
@@ -228,9 +228,22 @@ func (t Type) requiresLengthPrefix() bool {
 	return t.T == StringTy || t.T == BytesTy || t.T == SliceTy
 }
 
+// offsetRequired returns true if the type is considered dynamic
+func offsetRequired(t Type) bool {
+	// dynamic types
+	// array is also a dynamic type if the array type is dynamic
+	if t.T == StringTy || t.T == BytesTy || t.T == SliceTy || (t.T == ArrayTy && offsetRequired(*t.Elem)) {
+		return true
+	}
+
+	return false
+}
+
 // getOffset returns the offset to be added for t
 func getOffset(t Type) int {
-	if t.T == ArrayTy {
+	// if it is an array and there are no dynamic types
+	// then the array is static type
+	if t.T == ArrayTy && !offsetRequired(*t.Elem) {
 		return 32 * t.Size
 	}
 
